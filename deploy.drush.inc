@@ -247,12 +247,7 @@ function deploy_clear_caches($alias) {
  * Requires 'environment' to be set on the alias.
  */
 function deploy_custom_environment_commands_pre_updb($alias) {
-  if (isset($alias['environment'])) {
-    $env = $alias['environment'];
-    $env = str_replace(array(' ', '-'), '_', $env);
-    $env_function = 'deploy_custom_environment_pre_' . $env;
-    $env_function($alias);
-  }
+  deploy_call_custom_deployment_function($alias, 'pre');
 }
 
 /**
@@ -263,11 +258,20 @@ function deploy_custom_environment_commands_pre_updb($alias) {
  * Requires 'environment' to be set on the alias.
  */
 function deploy_custom_environment_commands_post_updb($alias) {
+  deploy_call_custom_deployment_function($alias, 'post');
+}
+
+/**
+ * Helper for calling custom deployment functions for environments.
+ */
+function deploy_call_custom_deployment_function($alias, $step) {
   if (isset($alias['environment'])) {
     $env = $alias['environment'];
     $env = str_replace(array(' ', '-'), '_', $env);
-    $env_function = 'deploy_custom_environment_post_' . $env;
-    $env_function($alias);
+    $env_function = 'deploy_custom_environment_' . $step . '_' . $env;
+    if (function_exists($env_function)) {
+      $env_function($alias);
+    }
   }
 }
 
