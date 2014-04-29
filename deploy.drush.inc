@@ -107,10 +107,10 @@ function drush_deploy_site_deploy() {
   drush_deploy_site_set_up();
   deploy_backup_site($alias);
   deploy_enable_site($alias);
-  deploy_update_database($alias);
   if (drush_include(DRUSH_BASE_PATH . '/commands/deploy', 'deploy.custom') == TRUE) {
     deploy_custom_environment_commands($alias);
   }
+  deploy_update_database($alias);
   deploy_revert_all_features($alias);
   deploy_clear_caches($alias);
 }
