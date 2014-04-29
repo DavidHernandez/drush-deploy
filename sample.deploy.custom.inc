@@ -24,21 +24,8 @@ function deploy_custom_commands() {
 }
 
 /**
- * Add custom commands for different environments.
- * Requires 'environment' to be set on the alias.
- */
-function deploy_custom_environment_commands($alias) {
-  if (isset($alias['environment'])) {
-    $env = $alias['environment'];
-    $env = str_replace(array(' ', '-'), '_', $env);
-    $env_function = 'deploy_custom_environment_' . $env;
-    $env_function($alias);
-  }
-}
-
-/**
  * Sample function for a "test_environment".
  */
-function deploy_custom_environment_test_environment($alias) {
+function deploy_custom_environment_pre_test_environment($alias) {
   drush_invoke('en', array('simpletest'));
 }

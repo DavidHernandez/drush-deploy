@@ -108,10 +108,13 @@ function drush_deploy_site_deploy() {
   deploy_backup_site($alias);
   deploy_enable_site($alias);
   if (drush_include(DRUSH_BASE_PATH . '/commands/deploy', 'deploy.custom') == TRUE) {
-    deploy_custom_environment_commands($alias);
+    deploy_custom_environment_commands_pre_updb($alias);
   }
   deploy_update_database($alias);
   deploy_revert_all_features($alias);
+  if (drush_include(DRUSH_BASE_PATH . '/commands/deploy', 'deploy.custom') == TRUE) {
+    deploy_custom_environment_commands_post_updb($alias);
+  }
   deploy_clear_caches($alias);
 }
 
@@ -229,6 +232,42 @@ function deploy_clear_caches($alias) {
   }
   else {
     drush_invoke_process(deploy_get_alias_name($alias), 'cc', array('all'));
+  }
+}
+
+/**
+ * Enable customization of environments.
+ */
+
+/**
+ * Add custom commands for different environments to be executed before
+ * updating the db. Usually used for enabling/disabling modules or
+ * syncing databases.
+ *
+ * Requires 'environment' to be set on the alias.
+ */
+function deploy_custom_environment_commands_pre_updb($alias) {
+  if (isset($alias['environment'])) {
+    $env = $alias['environment'];
+    $env = str_replace(array(' ', '-'), '_', $env);
+    $env_function = 'deploy_custom_environment_pre_' . $env;
+    $env_function($alias);
+  }
+}
+
+/**
+ * Add custom commands for different environments to be executed after
+ * updating the db. Usually used for changing things after updb and fra,
+ * like updating features.
+ *
+ * Requires 'environment' to be set on the alias.
+ */
+function deploy_custom_environment_commands_post_updb($alias) {
+  if (isset($alias['environment'])) {
+    $env = $alias['environment'];
+    $env = str_replace(array(' ', '-'), '_', $env);
+    $env_function = 'deploy_custom_environment_post_' . $env;
+    $env_function($alias);
   }
 }
 
