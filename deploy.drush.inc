@@ -57,6 +57,7 @@ function deploy_drush_command() {
     'examples' => array(
       'drush @alias site-set-up' => 'Creates a copy of the site in the specified environment.',
     ),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
   $command['site-deploy'] = array(
   	'description' => 'Deploys a site',
@@ -67,6 +68,7 @@ function deploy_drush_command() {
     'examples' => array(
       'drush @alias deploy' => 'Deploys a site to a new environment.',
     ),
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
   if (drush_include(DRUSH_BASE_PATH . '/commands/deploy', 'deploy.custom') == TRUE) {
     $command += deploy_custom_commands();
@@ -179,19 +181,26 @@ function deploy_fix_permissions($alias) {
  * Requires 'backup folder' to be defined on the $alias.
  */
 function deploy_backup_site($alias) {
-  $backup_folder = deploy_get_backups_folder($alias);
-  $release = deploy_get_release_name();
-  $backup_file = $backup_folder . '/' . $release . '.sql';
+  $alias_name = deploy_get_alias_name($alias);
+  $status = drush_invoke_process($alias_name, 'status', array());
 
-  $arguments = array();
-  $options = array();
-  
-  $options['structure-tables-list'] = 'cache,cache_filter,cache_menu,cache_page,history,search_*,sessions,watchdog';
-  $options['result-file'] = $backup_file;
-  // $options['data-only'];
+  // Only do the backup if the site is installed.
+  // Prevents crash when installing the site for the first time.
+  if (isset($status['object']['drupal-version'])) {
+    $backup_folder = deploy_get_backups_folder($alias);
+    $release = deploy_get_release_name();
+    $backup_file = $backup_folder . '/' . $release . '.sql';
 
-  // drush_invoke_process(deploy_get_alias_name($alias), 'sql-dump', $arguments, $options);
-  drush_invoke_process('@local', 'sql-dump', $arguments, $options);
+    $arguments = array();
+    $options = array();
+
+    $options['structure-tables-list'] = 'cache,cache_filter,cache_menu,cache_page,history,search_*,sessions,watchdog';
+    $options['result-file'] = $backup_file;
+    // $options['data-only'];
+
+    // drush_invoke_process($alias_name, 'sql-dump', $arguments, $options);
+    drush_invoke_process('@local', 'sql-dump', $arguments, $options);
+  }
 }
 
 /**
@@ -201,11 +210,11 @@ function deploy_enable_site($alias) {
   $destination = deploy_get_current_path_from_alias($alias);
   $source = deploy_get_buildpath_from_alias($alias);
 
-  $commands = array(
-    "sudo rm $destination",
-  	"sudo ln -s $source $destination",
-  	//"sudo ln -s $ $current /var/www/current",
-  );
+  $commands = array();
+  if (file_exists($destination)) {
+    $commands[] = "sudo rm $destination";
+  }
+  $commands[] = "sudo ln -s $source $destination";
   deploy_execute_drush_commands($commands);
 }
 
